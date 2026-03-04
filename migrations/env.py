@@ -1,3 +1,19 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Force load .env from project root
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
+print("DATABASE_URL from env.py:", os.getenv("DATABASE_URL"))
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
+
+from app.database import Base
+
 from logging.config import fileConfig
 import sys
 import os
