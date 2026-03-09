@@ -1,0 +1,4 @@
+daily_energy_kwh,days_of_autonomy,panel_efficiency,battery_voltage
+10,2,0.18,12
+15,3,0.20,24
+8,1,0.15,12

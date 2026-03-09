@@ -1,202 +1,126 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Float,
-    DateTime,
-    ForeignKey,
-    Boolean,
-    Enum,
-    Text,
-    UniqueConstraint
-)
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-import enum
 
 from app.database import Base
 
 
-# ==========================================
-# ENUMS
-# ==========================================
-
-class UserRole(enum.Enum):
-    CUSTOMER = "CUSTOMER"
-    INSTALLER = "INSTALLER"
-    COOPERATIVE_ADMIN = "COOPERATIVE_ADMIN"
-    SUPER_ADMIN = "SUPER_ADMIN"
-
-
-class PaymentStatus(enum.Enum):
-    PENDING = "PENDING"
-    PAID = "PAID"
-    DEFAULTED = "DEFAULTED"
-    FAILED = "FAILED"
-
-
-class SystemStatus(enum.Enum):
-    ACTIVE = "ACTIVE"
-    DISCONNECTED = "DISCONNECTED"
-    MAINTENANCE = "MAINTENANCE"
-
-
-# ==========================================
-# USERS (AUTH TABLE)
-# ==========================================
-
+# -----------------------------
+# USERS (Authentication)
+# -----------------------------
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    email = Column(String, unique=True, nullable=False, index=True)
-    phone = Column(String, index=True)
-    password_hash = Column(String, nullable=False)
-
-    role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
-
+    email = Column(String, unique=True, index=True, nullable=False)
+    phone = Column(String, unique=True, index=True)
+    hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
 
+    cooperatives = relationship("CooperativeMember", back_populates="user")
+
+
+# -----------------------------
+# COOPERATIVES
+# -----------------------------
+class Cooperative(Base):
+    __tablename__ = "cooperatives"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    location = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    members = relationship("CooperativeMember", back_populates="cooperative")
+    customers = relationship("Customer", back_populates="cooperative")
 
 
-# ==========================================
-# CUSTOMER PROFILE
-# ==========================================
+# -----------------------------
+# COOPERATIVE MEMBERS
+# -----------------------------
+class CooperativeMember(Base):
+    __tablename__ = "cooperative_members"
 
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(Integer, ForeignKey("users.id"))
+    cooperative_id = Column(Integer, ForeignKey("cooperatives.id"))
+
+    role = Column(String, default="member")
+
+    user = relationship("User", back_populates="cooperatives")
+    cooperative = relationship("Cooperative", back_populates="members")
+
+
+# -----------------------------
+# CUSTOMERS
+# -----------------------------
 class Customer(Base):
     __tablename__ = "customers"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     name = Column(String, nullable=False)
-    location = Column(String, nullable=False)
+    phone = Column(String)
+    address = Column(String)
 
-    monthly_income = Column(Float, nullable=False)
-    monthly_expenses = Column(Float, nullable=False)
+    cooperative_id = Column(Integer, ForeignKey("cooperatives.id"))
 
-    credit_score = Column(Integer)
-    bureau_score = Column(Integer)
-    default_probability = Column(Float)
-
-    risk_grade = Column(String)
-
-    is_flagged = Column(Boolean, default=False)
-    fraud_notes = Column(Text)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user = relationship("User")
+    cooperative = relationship("Cooperative", back_populates="customers")
     solar_systems = relationship("SolarSystem", back_populates="customer")
     payments = relationship("Payment", back_populates="customer")
 
 
-# ==========================================
-# COOPERATIVES
-# ==========================================
-
-class Cooperative(Base):
-    __tablename__ = "cooperatives"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True, nullable=False)
-    location = Column(String)
-
-    group_risk_score = Column(Float)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    members = relationship("CooperativeMember", back_populates="cooperative")
-
-
-class CooperativeMember(Base):
-    __tablename__ = "cooperative_members"
-
-    id = Column(Integer, primary_key=True)
-    cooperative_id = Column(Integer, ForeignKey("cooperatives.id"))
-    customer_id = Column(Integer, ForeignKey("customers.id"))
-
-    cooperative = relationship("Cooperative", back_populates="members")
-
-
-# ==========================================
+# -----------------------------
 # SOLAR SYSTEMS
-# ==========================================
-
+# -----------------------------
 class SolarSystem(Base):
     __tablename__ = "solar_systems"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    customer_id = Column(
-        Integer,
-        ForeignKey("customers.id"),
-        nullable=False,
-        index=True
-    )
+    customer_id = Column(Integer, ForeignKey("customers.id"))
 
-    system_kw = Column(Float, nullable=False)
-    total_cost = Column(Float, nullable=False)
+    system_size_kw = Column(Float)
+    battery_kwh = Column(Float)
+    inverter_kw = Column(Float)
 
-    inverter_serial = Column(String, unique=True)
-
-    status = Column(Enum(SystemStatus), default=SystemStatus.ACTIVE)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
+    installation_date = Column(DateTime, default=datetime.utcnow)
+    system_cost = Column(Float)
 
     customer = relationship("Customer", back_populates="solar_systems")
 
 
-# ==========================================
+# -----------------------------
 # PAYMENTS
-# ==========================================
-
+# -----------------------------
 class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    customer_id = Column(
-        Integer,
-        ForeignKey("customers.id"),
-        nullable=False,
-        index=True
-    )
+    customer_id = Column(Integer, ForeignKey("customers.id"))
 
-    amount = Column(Float, nullable=False)
-
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
-
-    due_date = Column(DateTime, index=True)
-    paid_at = Column(DateTime)
-
-    transaction_reference = Column(String, unique=True)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
+    amount = Column(Float)
+    due_date = Column(DateTime)
+    paid = Column(Boolean, default=False)
 
     customer = relationship("Customer", back_populates="payments")
 
-# ==========================================
-# PORTFOLIO ANALYTICS
-# ==========================================
 
+# -----------------------------
+# PORTFOLIO METRICS
+# -----------------------------
 class PortfolioMetrics(Base):
     __tablename__ = "portfolio_metrics"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
 
-    total_active_loans = Column(Integer)
-    total_defaulted_loans = Column(Integer)
+    cooperative_id = Column(Integer, ForeignKey("cooperatives.id"))
+
+    total_customers = Column(Integer)
+    active_systems = Column(Integer)
     total_revenue = Column(Float)
-    average_default_probability = Column(Float)
+    default_rate = Column(Float)
 
-    snapshot_date = Column(DateTime, default=datetime.utcnow)
-
-    __table_args__ = (
-        UniqueConstraint("snapshot_date", name="unique_snapshot_per_day"),
-    )
+    updated_at = Column(DateTime, default=datetime.utcnow)
