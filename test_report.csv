@@ -1,6 +1,0 @@
-Timestamp,User,Action,Input,Response
-2026-03-06 15:11:40,user1@example.com,Create User,"user1@example.com",{"detail":"Not Found"}
-2026-03-06 15:11:40,user2@example.com,Create User,"user2@example.com",{"detail":"Not Found"}
-2026-03-06 15:11:40,user3@example.com,Create User,"user3@example.com",{"detail":"Not Found"}
-2026-03-06 15:11:40,ALL,Health Check,,"{"status":"ok"}"
-2026-03-06 15:11:40,ALL,Server Stop,,Server stopped
