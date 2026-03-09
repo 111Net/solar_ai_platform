@@ -1,0 +1,26 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker images
+        run: docker-compose -f docker-compose.yml build --no-cache
+
+      - name: Push images
+        run: |
+          echo "2780@inas" | docker login -u "aakinyanju" --password-stdin
+          docker-compose -f docker-compose.yml push
+
+      - name: Deploy to server
+        run: ssh ubuntu@192.168.111.129 "cd ~/solar_ai_platform && docker-compose pull && docker-compose up -d"
