@@ -19,7 +19,7 @@ jobs:
 
       - name: Push images
         run: |
-          echo "2780@inas" | docker login -u "aakinyanju" --password-stdin
+          echo "2780@inas" | docker login -u "aakinyanju@gmail.com" --password-stdin
           docker-compose -f docker-compose.yml push
 
       - name: Deploy to server

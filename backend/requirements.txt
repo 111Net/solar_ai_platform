@@ -1,7 +1,9 @@
 fastapi
-uvicorn
-sqlalchemy
-psycopg2-binary
+uvicorn[standard]
 pydantic
-scikit-learn
-joblib
+requests
+python-multipart
+jinja2
+aiofiles
+redis
+psycopg2-binary
